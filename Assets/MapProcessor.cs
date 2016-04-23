@@ -83,7 +83,7 @@ public class MapProcessor : MonoBehaviour {
 
     }
 
-    private void DrawMapObj(Vector2[] vecs)
+    private void DrawMapObj(Vector2[] vertices2D)
     {
         //Debug.Log(vecs);
         //Vector2[] vertices2D = new Vector2[] {
@@ -102,23 +102,23 @@ public class MapProcessor : MonoBehaviour {
         //};
 
         // Use the triangulator to get indices for creating triangles
-        Vector2[] vertices2D = vecs;
-        GameObject obj = new GameObject();
-        //Debug.Log(coords);
-        Triangulator tr = new Triangulator(vertices2D);
-        int[] indices = tr.Triangulate();
-        int[] rindices = new int[indices.Length];
-        for (int i = 0; i < indices.Length; i++)
-        {
-            rindices[indices.Length - i - 1] = indices[i];
-        }
-        // Create the Vector3 vertices
-        Vector3[] vertices = new Vector3[vertices2D.Length];
-        for (int i = vertices.Length - 1; i >= 0; i--)
-        {
-            vertices[i] = new Vector3(vertices2D[i].x, vertices2D[i].y, 0);
-            //Debug.Log("X:" + vertices2D[i].x + "Y:" + vertices2D[i].y);
-        }
+        //Vector2[] vertices2D = vecs;
+        //GameObject obj = new GameObject();
+        ////Debug.Log(coords);
+        //Triangulator tr = new Triangulator(vertices2D);
+        //int[] indices = tr.Triangulate();
+        //int[] rindices = new int[indices.Length];
+        //for (int i = 0; i < indices.Length; i++)
+        //{
+        //    rindices[indices.Length - i - 1] = indices[i];
+        //}
+        //// Create the Vector3 vertices
+        //Vector3[] vertices = new Vector3[vertices2D.Length];
+        //for (int i = vertices.Length - 1; i >= 0; i--)
+        //{
+        //    vertices[i] = new Vector3(vertices2D[i].x, vertices2D[i].y, 0);
+        //    //Debug.Log("X:" + vertices2D[i].x + "Y:" + vertices2D[i].y);
+        //}
 
         //List<Vector3> vec3 = new List<Vector3>();
         //foreach (Vector2 vec in coords)
@@ -126,16 +126,29 @@ public class MapProcessor : MonoBehaviour {
         //    vec3.Add(new Vector3(vec.x, vec.y, 0));
         //}
 
+
+        // Use the triangulator to get indices for creating triangles
+        Triangulator tr = new Triangulator(vertices2D);
+        int[] indices = tr.Triangulate();
+
+        // Create the Vector3 vertices
+        Vector3[] vertices = new Vector3[vertices2D.Length];
+        for (int i = 0; i < vertices.Length; i++)
+        {
+            vertices[i] = new Vector3(vertices2D[i].x, vertices2D[i].y, 0);
+        }
         //Create the mesh
         //Mesh msh = gameObject.GetComponent<MeshFilter>().mesh;
         Mesh msh = new Mesh();
         msh.Clear();
         msh.vertices = vertices;
-        msh.triangles = rindices;
+        //msh.triangles = rindices;
+        msh.triangles = indices;
         msh.RecalculateNormals();
         msh.RecalculateBounds();
 
         // Set up game object with mesh;
+        GameObject obj = new GameObject();
         obj.AddComponent(typeof(MeshRenderer));
         MeshFilter filter = obj.AddComponent(typeof(MeshFilter)) as MeshFilter;
         filter.mesh = msh;

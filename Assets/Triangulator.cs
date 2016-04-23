@@ -8,6 +8,11 @@ public class Triangulator
     public Triangulator(Vector2[] points)
     {
         m_points = new List<Vector2>(points);
+        //if the first vertex == the last, remove the last
+        int size = m_points.Count;
+        if (size >= 3)
+            if (m_points[0] == m_points[size - 1])
+                m_points.RemoveAt(size - 1);
     }
 
     public int[] Triangulate()
