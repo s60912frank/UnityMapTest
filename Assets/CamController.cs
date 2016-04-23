@@ -3,7 +3,7 @@ using System.Collections;
 
 public class CamController : MonoBehaviour {
     private Transform trans;
-    private float startX;
+    private float startX; //存cam位置
     private float startY;
     private GameObject map;
     private Vector3 dragOrigin;
@@ -13,11 +13,12 @@ public class CamController : MonoBehaviour {
         trans = gameObject.transform;
         startX = trans.position.x;
         startY = trans.position.y;
-        map = GameObject.Find("Plane");
+        map = GameObject.Find("Plane"); //存map主體等一下會用到
     }
 	
 	// Update is called once per frame
 	void Update () {
+        //方向建移動cam
         if (Input.GetKey(KeyCode.UpArrow))
         {
             trans.Translate(Vector3.up * 0.5f);
@@ -34,20 +35,15 @@ public class CamController : MonoBehaviour {
         {
             trans.Translate(Vector3.right * 0.5f);
         }
-        //if(trans.position.y > MapProcessor.mapBoundaries[0] ||
-        //    trans.position.y < MapProcessor.mapBoundaries[1] ||
-        //    trans.position.x < MapProcessor.mapBoundaries[2] ||
-        //    trans.position.x > MapProcessor.mapBoundaries[3])
-        //{
-        //    //Debug.Log("OUT!!!!");
-        //}
 
+
+        //檢查cam是否移動超過了一定距離
         if (trans.position.x - startX > 9)
         {
             Debug.Log(trans.position.x - startX);
             startX = trans.position.x;
             //xtile+1
-            map.BroadcastMessage("GetNewTile", new int[] { 1, 0 });
+            map.BroadcastMessage("GetNewTile", new int[] { 1, 0 }); //這可以呼叫該物體script中的function名稱
             
         }
         else if (trans.position.x - startX < -9)
