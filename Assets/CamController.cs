@@ -6,6 +6,7 @@ public class CamController : MonoBehaviour {
     private float startX; //存cam位置
     private float startY;
     private GameObject map;
+    private Vector3 nowHit;
     private Vector3 dragOrigin;
     private float dragSpeed = 0.5f;
 	// Use this for initialization
@@ -13,7 +14,7 @@ public class CamController : MonoBehaviour {
         trans = gameObject.transform;
         startX = trans.position.x;
         startY = trans.position.y;
-        map = GameObject.Find("Plane"); //存map主體等一下會用到
+        map = GameObject.Find("Map"); //存map主體等一下會用到
     }
 	
 	// Update is called once per frame
@@ -38,32 +39,39 @@ public class CamController : MonoBehaviour {
 
 
         //檢查cam是否移動超過了一定距離
-        if (trans.position.x - startX > 9)
+        RaycastHit hit;
+        if (Physics.Raycast(gameObject.transform.position, Vector3.forward, out hit))
         {
-            Debug.Log(trans.position.x - startX);
-            startX = trans.position.x;
-            //xtile+1
-            map.BroadcastMessage("GetNewTile", new int[] { 1, 0 }); //這可以呼叫該物體script中的function名稱
-            
+            nowHit = hit.transform.position;
+            //Debug.Log(nowHit);
         }
-        else if (trans.position.x - startX < -9)
+        else
         {
-            //xtile-1
-            startX = trans.position.x;
-            map.BroadcastMessage("GetNewTile", new int[] { -1, 0 });
-        }
-
-        if (trans.position.y - startY > 9)
-        {
-            //ytile+1
-            startY = trans.position.y;
-            map.BroadcastMessage("GetNewTile", new int[] { 0, 1 });
-        }
-        else if (trans.position.y - startY < -9)
-        {
-            //ytile-1
-            startY = trans.position.y;
-            map.BroadcastMessage("GetNewTile", new int[] { 0, -1 });
+            Vector2 diff = new Vector2(gameObject.transform.position.x - nowHit.x, gameObject.transform.position.y - nowHit.y).normalized;
+            float angle = Vector2.Angle(Vector2.right, diff);
+            if (angle < 45)
+            {
+                //Debug.Log("右");
+                map.BroadcastMessage("GetNewTile", new int[] { 1, 0 });
+            }
+            else if (angle >= 45 && angle <= 135)
+            {
+                if (diff.y > 0)
+                {
+                    //Debug.Log("上");
+                    map.BroadcastMessage("GetNewTile", new int[] { 0, 1 });
+                }
+                else
+                {
+                    //Debug.Log("下");
+                    map.BroadcastMessage("GetNewTile", new int[] { 0, -1 });
+                }
+            }
+            else if (angle > 135)
+            {
+                //Debug.Log("左");
+                map.BroadcastMessage("GetNewTile", new int[] { -1, 0 });
+            }
         }
 
         if (Input.GetMouseButtonDown(0))

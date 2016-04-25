@@ -7,44 +7,26 @@ public class MapProcessor : MonoBehaviour {
     private const string MAP_TYPE = "boundaries,buildings,roads";
     private int xTile;  //儲存現在camera所在的地圖格(大概 不是很準)
     private int yTile;
-    private List<int[]> drewTile; //儲存已畫地圖格的編號，判斷用
     public string url;
-    private float latitude = 25.0488153f;
-    private float longtitude = 121.445669f;
+    public static float latOrigin = 25.0488153f;
+    public static float lonOrigin = 121.445669f;
     private int zoom = 16; //放大倍率，1~19
+    private List<MapTile> mapTiles;
+    private int mapTileIndex = 0;
+    private bool mapTileLock = false;
 	// Use this for initialization
 	void Start () {
-        int[] tile = WorldToTilePos(longtitude, latitude, zoom);
-        xTile = tile[0]; //起始地圖格
-        yTile = tile[1];
-        requestMap(tile[0], tile[1]); //要第一塊地圖格
-        drewTile = new List<int[]>(); 
-        drewTile.Add(new int[] { tile[0], tile[1] }); //存第一塊
+        mapTiles = new List<MapTile>();
+        mapTiles.Add(new MapTile(lonOrigin, latOrigin, zoom));
+        xTile = mapTiles[mapTileIndex].xTile; //起始地圖格
+        yTile = mapTiles[mapTileIndex].yTile;
+        requestMap(xTile, yTile); //要第一塊地圖格
 	}
 	
 	// Update is called once per frame
 	void Update () {
         //沒幹嘛
 	}
-
-    public int[] WorldToTilePos(float lon, float lat, int zoom) //經緯度轉地圖格編號
-    {
-        int worldX = (int)Mathf.Floor((lon + 180.0f) / 360.0f * (1 << zoom));
-        int worldY = (int)Mathf.Floor(((1.0f - Mathf.Log(Mathf.Tan(lat * Mathf.PI / 180.0f) + 1.0f / Mathf.Cos(lat * Mathf.PI / 180.0f)) / Mathf.PI) / 2.0f * (1 << zoom)));
-        float[] latlon = TileToWorldPos(worldX, worldY, zoom);
-        longtitude = latlon[0]; //因為地圖格編號只能是整數，所以這裡將(0,0)設為第一塊地圖塊的中心
-        latitude = latlon[1];
-        return new int[] { worldX, worldY };
-    }
-
-    public float[] TileToWorldPos(float tile_x, float tile_y, int zoom) //地圖格編號轉經緯度
-    {
-        float n = Mathf.PI - ((2.0f * Mathf.PI * tile_y) / Mathf.Pow(2.0f, zoom));
-
-        float x = (float)((tile_x / Mathf.Pow(2.0f, zoom) * 360.0) - 180.0);
-        float y = (float)(180.0 / Mathf.PI * Mathf.Atan((Mathf.Exp(n) - Mathf.Exp(-n)) / 2));
-        return new float[] { x, y };
-    }
 
     private void requestMap(int xtile, int ytile) //要地圖塊
     {
@@ -85,86 +67,94 @@ public class MapProcessor : MonoBehaviour {
                 case "Polygon":
                     foreach (JSONObject co in obj["geometry"]["coordinates"].list[0].list) //polygon的座標陣列存在陣列[0]的陣列中
                     {
-                        float[] world = coordTrans(float.Parse(co[0].ToString()), float.Parse(co[1].ToString())); //座標xy做一下轉換
-                        coords.Add(new Vector3(world[0], world[1], 0)); //加到list中          
+                        coords.Add(new Vector2(float.Parse(co[0].ToString()), float.Parse(co[1].ToString()))); //加到list中          
                     }
                     break;
                 default:
                     Debug.Log(type);
                     break;
             }
-            DrawBuildings(type, coords.ToArray()); //丟進去畫
+            //DrawBuildings(type, coords.ToArray()); //丟進去畫
+            mapTiles[mapTileIndex].AddMapObj(type, coords);
         }
 
         JSONObject roads = data["roads"]["features"]; //讀取資料中的"roads"節點下的"features"節點
         foreach (JSONObject obj in roads.list)
         {
-            List<Vector3> coords = new List<Vector3>();
+            List<Vector2> coords = new List<Vector2>();
             string type = obj["geometry"]["type"].ToString().Replace("\"", "");
             switch (type)
             {
                 case "LineString":
                     foreach (JSONObject co in obj["geometry"]["coordinates"].list) //lineString的座標陣列存在陣列中
                     {
-                        float[] world = coordTrans(float.Parse(co[0].ToString()), float.Parse(co[1].ToString()));
-                        coords.Add(new Vector3(world[0], world[1], -0.1f)); //設成0好像會有點問題
+                        coords.Add(new Vector2(float.Parse(co[0].ToString()), float.Parse(co[1].ToString()))); 
                     }
                     break;
                 case "MultiLineString":
                     foreach (JSONObject co in obj["geometry"]["coordinates"].list) //multiLineString的座標陣列存在陣列中
                     {
-                        List<Vector3> smallLine = new List<Vector3>(); //看名稱就知道啦這個一個就有很多條線，所以一條線就丟去畫
+                        List<Vector2> smallLine = new List<Vector2>(); //看名稱就知道啦這個一個就有很多條線，所以一條線就丟去畫
                         foreach (JSONObject co2 in co.list)
                         {
-                            float[] world = coordTrans(float.Parse(co2[0].ToString()), float.Parse(co2[1].ToString()));
-                            smallLine.Add(new Vector3(world[0], world[1], -0.1f));
+                            smallLine.Add(new Vector2(float.Parse(co2[0].ToString()), float.Parse(co2[1].ToString()))); 
                         }
-                        DrawRoads(smallLine.ToArray()); //去畫
+                        //DrawRoads(smallLine.ToArray()); //去畫
+                        mapTiles[mapTileIndex].AddMapObj("LineString", smallLine);
                     }
                     break;
                 default:
                     Debug.Log(type);
                     break;
             }
-            DrawRoads(coords.ToArray()); //去畫
+            mapTiles[mapTileIndex].AddMapObj("LineString", coords);
         }
 
         JSONObject boundaries = data["boundaries"]["features"]; //讀取資料中的"boundaries"節點下的"features"節點
         foreach (JSONObject obj in boundaries.list) //其實跟上面一樣
         {
-            List<Vector3> coords = new List<Vector3>();
+            List<Vector2> coords = new List<Vector2>();
             string type = obj["geometry"]["type"].ToString().Replace("\"", "");
             switch (type)
             {
                 case "LineString":
                     foreach (JSONObject co in obj["geometry"]["coordinates"].list)
                     {
-                        float[] world = coordTrans(float.Parse(co[0].ToString()), float.Parse(co[1].ToString()));
-                        coords.Add(new Vector3(world[0], world[1], 0));
+                        coords.Add(new Vector2(float.Parse(co[0].ToString()), float.Parse(co[1].ToString()))); 
                     }
                     break;
                 case "MultiLineString":
                     foreach (JSONObject co in obj["geometry"]["coordinates"].list)
                     {
-                        List<Vector3> smallLine = new List<Vector3>();
+                        List<Vector2> smallLine = new List<Vector2>();
                         foreach (JSONObject co2 in co.list)
                         {
-                            float[] world = coordTrans(float.Parse(co2[0].ToString()), float.Parse(co2[1].ToString()));
-                            smallLine.Add(new Vector3(world[0], world[1], 0));
+                            smallLine.Add(new Vector2(float.Parse(co2[0].ToString()), float.Parse(co2[1].ToString()))); 
                         }
-                        DrawRoads(smallLine.ToArray());
+                        //DrawRoads(smallLine.ToArray());
+                        mapTiles[mapTileIndex].AddMapObj("LineString", smallLine);
                     }
                     break;
                 default:
                     Debug.Log(type);
                     break;
             }
-            DrawRoads(coords.ToArray());
+            mapTiles[mapTileIndex].AddMapObj("LineString", coords);
         }
+
+        foreach (MapTile mapTile in mapTiles)
+        {
+            foreach (MapTile.MapObj mo in mapTile.mapObjs)
+            {
+                DrawMapObj(mo.type, mo.verticies.ToArray());
+            }
+        }
+        mapTileLock = false;
     }
 
-    private void DrawBuildings(string type, Vector2[] vertices2D) //畫建築物
+    private void DrawMapObj(string type, Vector2[] vertices2D) //畫建築物
     {
+        GameObject obj = new GameObject(); //創個新物體
         Vector3[] vertices = new Vector3[vertices2D.Length];
         for (int i = 0; i < vertices.Length; i++) //就只是2D轉3D補0
         {
@@ -173,7 +163,6 @@ public class MapProcessor : MonoBehaviour {
         switch (type)
         {
             case "Polygon":
-                GameObject obj = new GameObject(); //創個新物體
                 // Use the triangulator to get indices for creating triangles
                 Triangulator tr = new Triangulator(vertices2D);
                 int[] indices = tr.Triangulate();
@@ -190,52 +179,36 @@ public class MapProcessor : MonoBehaviour {
                 msgr.material = Resources.Load("building") as Material;
                 MeshFilter filter = obj.AddComponent<MeshFilter>() as MeshFilter;
                 filter.mesh = msh;
-                obj.transform.parent = this.gameObject.transform; //附加在本plane下
+                //obj.transform.parent = this.gameObject.transform; //附加在本plane下
                 break;
             case "Point":
                 //還是不知怎畫
                 break;
+            case "LineString":
+                LineRenderer line = obj.AddComponent<LineRenderer>();
+                //set the number of points to the line
+                line.SetVertexCount(vertices.Length);
+                for (int i = 0; i < vertices.Length; i++)
+                {
+                    line.SetPosition(i, vertices[i]);
+                }
+                //set the width
+                line.SetWidth(0.1f, 0.1f);
+                line.material = Resources.Load("road") as Material;
+                //line.transform.parent = this.gameObject.transform;
+                line.useWorldSpace = false;
+                break;
         }
     }
 
-    private void DrawRoads(Vector3[] vertices)
+    public void GetNewTile(int[] diff) //跟伺服器要新地圖塊
     {
-        GameObject obj = new GameObject();
-        LineRenderer line = obj.AddComponent<LineRenderer>();
-        //set the number of points to the line
-        line.SetVertexCount(vertices.Length);
-        for (int i = 0; i < vertices.Length; i++)
+        if (!mapTileLock)
         {
-            line.SetPosition(i, vertices[i]);
+            mapTileLock = true;
+            xTile += diff[0]; //往右??格
+            yTile -= diff[1]; //往下??格
+            requestMap(xTile, yTile); //沒重複的話就要
         }
-        //set the width
-        line.SetWidth(0.1f, 0.1f);
-        line.material = Resources.Load("road") as Material;
-        line.transform.parent = this.gameObject.transform;
-        line.useWorldSpace = false;
-    }
-
-    private float[] coordTrans(float lon, float lat) //經緯度轉成遊戲內座標，因為zoom+1是兩倍所以用2的次方
-    {
-        float times = Mathf.Pow(2, zoom) / 30; //除30試試出來的@@
-        float worldX = (lon - longtitude) * times;
-        float worldY = (lat - latitude) * times;
-        return new float[] { worldX, worldY };
-    }
-
-    public bool GetNewTile(int[] diff) //跟伺服器要新地圖塊
-    {
-        xTile += diff[0]; //往右??格
-        yTile -= diff[1]; //往下??格
-        foreach (int[] tile in drewTile) //檢查這格是否有畫過了，避免重畫好幾次一樣的東西
-        {
-            if (tile[0] == xTile && tile[1] == yTile)
-            {
-                return false;
-            }
-        }
-        requestMap(xTile, yTile); //沒重複的話就要
-        drewTile.Add(new int[] { xTile, yTile }); //這格存入list
-        return true;
     }
 }
