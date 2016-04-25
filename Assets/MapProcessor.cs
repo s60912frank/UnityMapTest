@@ -156,6 +156,7 @@ public class MapProcessor : MonoBehaviour {
     private void DrawMapObj(string type, Vector2[] vertices2D) //畫建築物
     {
         GameObject obj = new GameObject(); //創個新物體
+        obj.tag = "MapObj";
         Vector3[] vertices = new Vector3[vertices2D.Length];
         for (int i = 0; i < vertices.Length; i++) //就只是2D轉3D補0
         {
@@ -213,5 +214,18 @@ public class MapProcessor : MonoBehaviour {
             mapTileIndex++;
             requestMap(xTile, yTile); //沒重複的話就要
         }
+    }
+
+    public void GetNewZoomTile(object[] objs)
+    {
+        mapTiles.Clear();
+        mapTileIndex = 0;
+        int zoomDiff = (int)(objs[1] as int?);
+        Vector2 camPos = (Vector2)(objs[0] as Vector2?);
+        zoom += zoomDiff;
+        float times = Mathf.Pow(2, zoom) / 10;
+        mapTiles.Add(new MapTile(camPos.x / times + lonOrigin, camPos.y / times + latOrigin, zoom));
+        requestMap(mapTiles[0].xTile, mapTiles[0].yTile);
+        Debug.Log((camPos.x / times + lonOrigin).ToString() + "/" + (camPos.y / times + latOrigin).ToString());
     }
 }

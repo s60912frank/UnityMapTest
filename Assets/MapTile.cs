@@ -64,6 +64,8 @@ public class MapTile
         this.mapObjs = new List<MapObj>();
         plane = GameObject.CreatePrimitive(PrimitiveType.Plane);
         plane.transform.Rotate(Vector3.right, -90);
+        //plane.transform.localScale = new Vector3(5, 0, 5);
+        plane.tag = "MapObj";
     }
 
     public MapTile(int xTile, int yTile, int zoom)
@@ -75,6 +77,8 @@ public class MapTile
         this.mapObjs = new List<MapObj>();
         plane = GameObject.CreatePrimitive(PrimitiveType.Plane);
         plane.transform.Rotate(Vector3.right, -90);
+        //plane.transform.localScale = new Vector3(5, 0, 5);
+        plane.tag = "MapObj";
     }
 
     public void WorldToTilePos() //經緯度轉地圖格編號
@@ -117,7 +121,7 @@ public class MapTile
 
     public void Normalize()
     {
-        float times = Mathf.Pow(2, zoom) / 30; //除30試試出來的@@;
+        float times = Mathf.Pow(2, zoom) / 10; //除10試試出來的@@;
         mapBoundary.Up = mapBoundary.Down = (latitude - MapProcessor.latOrigin) * times;
         mapBoundary.Left = mapBoundary.Right = (longtitude - MapProcessor.lonOrigin) * times;
         foreach (MapObj mo in mapObjs)

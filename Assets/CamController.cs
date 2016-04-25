@@ -47,7 +47,7 @@ public class CamController : MonoBehaviour {
         }
         else
         {
-            Vector2 diff = new Vector2(gameObject.transform.position.x - nowHit.x, gameObject.transform.position.y - nowHit.y).normalized;
+            Vector2 diff = new Vector2(trans.position.x - nowHit.x, trans.position.y - nowHit.y).normalized;
             float angle = Vector2.Angle(Vector2.right, diff);
             if (angle < 45)
             {
@@ -74,16 +74,49 @@ public class CamController : MonoBehaviour {
             }
         }
 
-        if (Input.GetMouseButtonDown(0))
+        //if (Input.GetMouseButtonDown(0))
+        //{
+        //    dragOrigin = Input.mousePosition;
+        //    return;
+        //}
+
+        //if (!Input.GetMouseButton(0)) return;
+
+        //Vector3 pos = Camera.main.ScreenToViewportPoint(Input.mousePosition - dragOrigin);
+        //Vector3 move = new Vector3(-pos.x * dragSpeed, -pos.y * dragSpeed, 0);
+        //transform.Translate(move, Space.World);
+
+        if (Input.GetAxis("Mouse ScrollWheel") > 0)
         {
-            dragOrigin = Input.mousePosition;
-            return;
+            trans.position += Vector3.forward * 0.4f;
+        }
+        else if (Input.GetAxis("Mouse ScrollWheel") < 0)
+        {
+            trans.position -= Vector3.forward * 0.4f;
         }
 
-        if (!Input.GetMouseButton(0)) return;
-
-        Vector3 pos = Camera.main.ScreenToViewportPoint(Input.mousePosition - dragOrigin);
-        Vector3 move = new Vector3(-pos.x * dragSpeed, -pos.y * dragSpeed, 0);
-        transform.Translate(move, Space.World);  
+        if (trans.position.z > -5)
+        {
+            Debug.Log("太大啦!");
+            GameObject[] gos = GameObject.FindGameObjectsWithTag("MapObj");
+            foreach (GameObject go in gos)
+            {
+                Destroy(go);
+            }
+            trans.position = new Vector3(trans.position.x, trans.position.y, -10);
+            map.BroadcastMessage("GetNewZoomTile", new object[] { new Vector2(trans.position.x, trans.position.y), 1 });
+        }
+        if (trans.position.z < -20)
+        {
+            Debug.Log("太小啦!");
+            GameObject[] gos = GameObject.FindGameObjectsWithTag("MapObj");
+            foreach (GameObject go in gos)
+            {
+                Destroy(go);
+            }
+            trans.position = new Vector3(trans.position.x, trans.position.y, -10);
+            map.BroadcastMessage("GetNewZoomTile", new object[] { new Vector2(trans.position.x, trans.position.y), -1 });
+            
+        }
 	}
 }
