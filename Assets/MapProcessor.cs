@@ -10,7 +10,7 @@ public class MapProcessor : MonoBehaviour {
     public string url;
     public static float latOrigin = 25.0488153f;
     public static float lonOrigin = 121.445669f;
-    private int zoom = 16; //放大倍率，1~19
+    private int zoom = 14; //放大倍率，1~19
     private List<MapTile> mapTiles;
     private int mapTileIndex = 0;
     private bool mapTileLock = false;
@@ -142,6 +142,7 @@ public class MapProcessor : MonoBehaviour {
             mapTiles[mapTileIndex].AddMapObj("LineString", coords);
         }
 
+        mapTiles[mapTileIndex].Normalize();
         foreach (MapTile mapTile in mapTiles)
         {
             foreach (MapTile.MapObj mo in mapTile.mapObjs)
@@ -208,6 +209,8 @@ public class MapProcessor : MonoBehaviour {
             mapTileLock = true;
             xTile += diff[0]; //往右??格
             yTile -= diff[1]; //往下??格
+            mapTiles.Add(new MapTile(xTile, yTile, zoom));
+            mapTileIndex++;
             requestMap(xTile, yTile); //沒重複的話就要
         }
     }
