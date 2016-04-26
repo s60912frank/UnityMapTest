@@ -3,17 +3,14 @@ using System.Collections;
 
 public class CamController : MonoBehaviour {
     private Transform trans;
-    private float startX; //存cam位置
-    private float startY;
     private GameObject map;
     private Vector3 nowHit;
     private float panDiff;
 	// Use this for initialization
 	void Start () {
         trans = gameObject.transform;
-        startX = trans.position.x;
-        startY = trans.position.y;
         map = GameObject.Find("Map"); //存map主體等一下會用到
+        
     }
 	
 	// Update is called once per frame
@@ -80,26 +77,35 @@ public class CamController : MonoBehaviour {
             trans.position -= Vector3.forward * 0.4f;
         }
 
-        //雙指縮放,未測試
-        if (Input.touchCount == 2)
+        if (Input.touchCount == 1 && Input.GetTouch(0).phase == TouchPhase.Moved)
         {
-            if(Input.touches[0].phase == TouchPhase.Began && Input.touches[1].phase == TouchPhase.Began)
-            {
-                panDiff = Mathf.Sqrt((Input.touches[0].position - Input.touches[1].position).sqrMagnitude);
-            }
-            else if (Input.touches[0].phase == TouchPhase.Moved && Input.touches[1].phase == TouchPhase.Moved)
-            {
-                float diff = Mathf.Sqrt((Input.touches[0].position - Input.touches[1].position).sqrMagnitude);
-                float dir = panDiff - diff;
-                if (dir < 0)
-                {
-                    trans.position -= Vector3.forward * dir;
-                }
-                else
-                {
-                    trans.position += Vector3.forward * dir;
-                }
-            }
+            Vector2 touchDeltaPosition = Input.GetTouch(0).deltaPosition;
+            transform.Translate(-touchDeltaPosition * 0.025f);
+        }
+
+        //雙指縮放,未測試
+        if (Input.touchCount == 2 && (Input.GetTouch(0).phase == TouchPhase.Moved || Input.GetTouch(1).phase == TouchPhase.Moved))
+        {
+            float touchDelta = Mathf.Sqrt((Input.GetTouch(0).deltaPosition - Input.GetTouch(1).deltaPosition).sqrMagnitude);
+            trans.position -= Vector3.forward * touchDelta * 0.05f;
+            //if(Input.touches[0].phase == TouchPhase.Began && Input.touches[1].phase == TouchPhase.Began)
+            //{
+            //    panDiff = Mathf.Sqrt((Input.touches[0].position - Input.touches[1].position).sqrMagnitude);
+            //}
+            //else if (Input.touches[0].phase == TouchPhase.Moved && Input.touches[1].phase == TouchPhase.Moved)
+            //{
+            //    float diff = Mathf.Sqrt((Input.touches[0].position - Input.touches[1].position).sqrMagnitude);
+            //    float dir = panDiff - diff;
+            //    if (dir < 0)
+            //    {
+            //        trans.position -= Vector3.forward * dir * 0.005f;
+            //    }
+            //    else
+            //    {
+            //        trans.position += Vector3.forward * dir * 0.005f;
+            //    }
+            //    Debug.Log(dir);
+            //}
         }
 
         //起始y=-10,-5時可視面積1/4所以zoom+1,-20時可視面積4倍所以zoom-1

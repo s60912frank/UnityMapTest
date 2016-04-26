@@ -31,10 +31,11 @@ public class MapProcessor : MonoBehaviour {
 
     private void requestMap(int xtile, int ytile) //要地圖塊
     {
+        
         //如果之前有存過此地圖塊那就直接讀檔
-        if (File.Exists("./MapTiles/" + zoom.ToString() + "_" + xTile.ToString() + "_" + yTile.ToString() + ".json"))
+        if (File.Exists(Application.persistentDataPath + "/" + zoom.ToString() + "_" + xTile.ToString() + "_" + yTile.ToString() + ".json"))
         {
-            JsonProssor(File.ReadAllText("./MapTiles/" + zoom.ToString() + "_" + xTile.ToString() + "_" + yTile.ToString() + ".json"));
+            JsonProssor(File.ReadAllText(Application.persistentDataPath + "/" + zoom.ToString() + "_" + xTile.ToString() + "_" + yTile.ToString() + ".json"));
         }
         //沒的話跟伺服器要
         else
@@ -53,7 +54,7 @@ public class MapProcessor : MonoBehaviour {
         if (www.error == null)
         {
             Debug.Log("WWW Ok!");
-            File.WriteAllText("./MapTiles/" + zoom.ToString() + "_" + xTile.ToString() + "_" + yTile.ToString() + ".json", www.text);
+            File.WriteAllText(Application.persistentDataPath + "/" + zoom.ToString() + "_" + xTile.ToString() + "_" + yTile.ToString() + ".json", www.text);
             JsonProssor(www.text); //有資料就去處理囉
         }
         else
