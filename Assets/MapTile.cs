@@ -4,16 +4,18 @@ using System.Collections.Generic;
 
 public class MapTile 
 {
+    //都設public超臭
     public int xTile;
     public int yTile;
     public float longtitude;
     public float latitude;
     public int zoom;
-    public List<MapObj> mapObjs;
+    private float times; //自訂的縮放倍率
+    public List<MapObj> mapObjs; //儲存這塊圖上的物件
     public struct MapObj
     {
-        public string type;
-        public List<Vector2> verticies;
+        public string type; //物件類型
+        public List<Vector2> verticies; //物件的點
         public MapObj(string type, List<Vector2> vecs)
         {
             this.type = type;
@@ -21,22 +23,23 @@ public class MapTile
         }
 
     }
-    public MapBoundary mapBoundary = new MapBoundary();
+    public MapBoundary mapBoundary;//儲存這塊地圖的邊界
     public struct MapBoundary
     {
+        //上下左右
         public float Up;
         public float Down;
         public float Right;
         public float Left;
-        public MapBoundary(float zero = 0)
+        public MapBoundary(float up, float down, float right, float left)
         {
-            this.Up = zero;
-            this.Down = zero;
-            this.Right = zero;
-            this.Left = zero;
+            this.Up = up;
+            this.Down = down;
+            this.Right = right;
+            this.Left = left;
         }
 
-        public float Height
+        public float Height //取得高度
         {
             get
             {
@@ -44,7 +47,7 @@ public class MapTile
             }
         }
 
-        public float Width
+        public float Width //取得寬度
         {
             get
             {
@@ -52,7 +55,7 @@ public class MapTile
             }
         }
     }
-    public GameObject plane;
+    public GameObject plane; //這塊地圖的plane,raycast判斷用
 
     public MapTile(float lon, float lat, int zoom)
     {
@@ -61,11 +64,7 @@ public class MapTile
         this.zoom = zoom;
         WorldToTilePos();
         TileToWorldPos();
-        this.mapObjs = new List<MapObj>();
-        plane = GameObject.CreatePrimitive(PrimitiveType.Plane);
-        plane.transform.Rotate(Vector3.right, -90);
-        //plane.transform.localScale = new Vector3(5, 0, 5);
-        plane.tag = "MapObj";
+        Initiallize();
     }
 
     public MapTile(int xTile, int yTile, int zoom)
@@ -74,11 +73,19 @@ public class MapTile
         this.yTile = yTile;
         this.zoom = zoom;
         TileToWorldPos();
+        Initiallize();
+    }
+
+    private void Initiallize()
+        //其他初始化
+    {
         this.mapObjs = new List<MapObj>();
         plane = GameObject.CreatePrimitive(PrimitiveType.Plane);
         plane.transform.Rotate(Vector3.right, -90);
-        //plane.transform.localScale = new Vector3(5, 0, 5);
         plane.tag = "MapObj";
+        times = Mathf.Pow(2, zoom) / 10; //除10試試出來的@@;
+        Vector2 worldCoord = new Vector2((longtitude - MapProcessor.lonOrigin) * times, (latitude - MapProcessor.latOrigin) * times);
+        mapBoundary = new MapBoundary(worldCoord.y, worldCoord.y, worldCoord.x, worldCoord.x);
     }
 
     public void WorldToTilePos() //經緯度轉地圖格編號
@@ -94,7 +101,7 @@ public class MapTile
         latitude = (float)(180.0 / Mathf.PI * Mathf.Atan((Mathf.Exp(n) - Mathf.Exp(-n)) / 2));
     }
 
-    public void UpdateBound(Vector2 vec)
+    public void UpdateBound(Vector2 vec) //更新地圖塊範圍用
     {
         if (vec.x > mapBoundary.Right)
         {
@@ -120,10 +127,8 @@ public class MapTile
     }
 
     public void Normalize()
+        //經緯度轉遊戲座標,並且計算範圍
     {
-        float times = Mathf.Pow(2, zoom) / 10; //除10試試出來的@@;
-        mapBoundary.Up = mapBoundary.Down = (latitude - MapProcessor.latOrigin) * times;
-        mapBoundary.Left = mapBoundary.Right = (longtitude - MapProcessor.lonOrigin) * times;
         foreach (MapObj mo in mapObjs)
         {
             for (int i = 0; i < mo.verticies.Count; i++)
@@ -133,7 +138,6 @@ public class MapTile
                 temp.x = (temp.x - MapProcessor.lonOrigin) * times;
                 temp.y = (temp.y - MapProcessor.latOrigin) * times;
                 UpdateBound(temp);
-                //Debug.Log(temp);
                 mo.verticies[i] = temp;
             }
         }

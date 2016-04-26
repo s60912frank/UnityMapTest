@@ -7,8 +7,7 @@ public class CamController : MonoBehaviour {
     private float startY;
     private GameObject map;
     private Vector3 nowHit;
-    private Vector3 dragOrigin;
-    private float dragSpeed = 0.5f;
+    private float panDiff;
 	// Use this for initialization
 	void Start () {
         trans = gameObject.transform;
@@ -37,13 +36,11 @@ public class CamController : MonoBehaviour {
             trans.Translate(Vector3.right * 0.5f);
         }
 
-
-        //檢查cam是否移動超過了一定距離
+        //從cam射ray,檢查cam是否離開了地圖塊,是就畫地圖
         RaycastHit hit;
         if (Physics.Raycast(gameObject.transform.position, Vector3.forward, out hit))
         {
-            nowHit = hit.transform.position;
-            //Debug.Log(nowHit);
+            nowHit = hit.transform.position; //紀錄最後射到的地圖塊
         }
         else
         {
@@ -51,41 +48,29 @@ public class CamController : MonoBehaviour {
             float angle = Vector2.Angle(Vector2.right, diff);
             if (angle < 45)
             {
-                //Debug.Log("右");
-                map.BroadcastMessage("GetNewTile", new int[] { 1, 0 });
+                map.BroadcastMessage("GetNewTile", new int[] { 1, 0 }); //跟正x軸夾角<45就是右方一格的地圖
             }
             else if (angle >= 45 && angle <= 135)
             {
                 if (diff.y > 0)
                 {
                     //Debug.Log("上");
-                    map.BroadcastMessage("GetNewTile", new int[] { 0, 1 });
+                    map.BroadcastMessage("GetNewTile", new int[] { 0, 1 });//跟正x軸夾角45~135且y>0就是上方一格的地圖
                 }
                 else
                 {
                     //Debug.Log("下");
-                    map.BroadcastMessage("GetNewTile", new int[] { 0, -1 });
+                    map.BroadcastMessage("GetNewTile", new int[] { 0, -1 });//跟正x軸夾角45~135且y<0就是下方一格的地圖
                 }
             }
             else if (angle > 135)
             {
                 //Debug.Log("左");
-                map.BroadcastMessage("GetNewTile", new int[] { -1, 0 });
+                map.BroadcastMessage("GetNewTile", new int[] { -1, 0 });//跟正x軸夾角135~180就是左方一格的地圖
             }
         }
 
-        //if (Input.GetMouseButtonDown(0))
-        //{
-        //    dragOrigin = Input.mousePosition;
-        //    return;
-        //}
-
-        //if (!Input.GetMouseButton(0)) return;
-
-        //Vector3 pos = Camera.main.ScreenToViewportPoint(Input.mousePosition - dragOrigin);
-        //Vector3 move = new Vector3(-pos.x * dragSpeed, -pos.y * dragSpeed, 0);
-        //transform.Translate(move, Space.World);
-
+        //滑鼠滾輪縮放
         if (Input.GetAxis("Mouse ScrollWheel") > 0)
         {
             trans.position += Vector3.forward * 0.4f;
@@ -95,28 +80,52 @@ public class CamController : MonoBehaviour {
             trans.position -= Vector3.forward * 0.4f;
         }
 
+        //雙指縮放,未測試
+        if (Input.touchCount == 2)
+        {
+            if(Input.touches[0].phase == TouchPhase.Began && Input.touches[1].phase == TouchPhase.Began)
+            {
+                panDiff = Mathf.Sqrt((Input.touches[0].position - Input.touches[1].position).sqrMagnitude);
+            }
+            else if (Input.touches[0].phase == TouchPhase.Moved && Input.touches[1].phase == TouchPhase.Moved)
+            {
+                float diff = Mathf.Sqrt((Input.touches[0].position - Input.touches[1].position).sqrMagnitude);
+                float dir = panDiff - diff;
+                if (dir < 0)
+                {
+                    trans.position -= Vector3.forward * dir;
+                }
+                else
+                {
+                    trans.position += Vector3.forward * dir;
+                }
+            }
+        }
+
+        //起始y=-10,-5時可視面積1/4所以zoom+1,-20時可視面積4倍所以zoom-1
         if (trans.position.z > -5)
         {
             Debug.Log("太大啦!");
-            GameObject[] gos = GameObject.FindGameObjectsWithTag("MapObj");
-            foreach (GameObject go in gos)
-            {
-                Destroy(go);
-            }
-            trans.position = new Vector3(trans.position.x, trans.position.y, -10);
-            map.BroadcastMessage("GetNewZoomTile", new object[] { new Vector2(trans.position.x, trans.position.y), 1 });
+            RequestNewZoomMap(1);
         }
         if (trans.position.z < -20)
         {
             Debug.Log("太小啦!");
-            GameObject[] gos = GameObject.FindGameObjectsWithTag("MapObj");
-            foreach (GameObject go in gos)
-            {
-                Destroy(go);
-            }
-            trans.position = new Vector3(trans.position.x, trans.position.y, -10);
-            map.BroadcastMessage("GetNewZoomTile", new object[] { new Vector2(trans.position.x, trans.position.y), -1 });
-            
+            RequestNewZoomMap(-1);     
         }
 	}
+
+    private void RequestNewZoomMap(int diff)
+    {
+        //清空地圖
+        GameObject[] gos = GameObject.FindGameObjectsWithTag("MapObj");
+        foreach (GameObject go in gos)
+        {
+            Destroy(go);
+        }
+        //cam z變回-10
+        trans.position = new Vector3(trans.position.x, trans.position.y, -10);
+        //request
+        map.BroadcastMessage("GetNewZoomTile", new object[] { new Vector2(trans.position.x, trans.position.y), diff });
+    }
 }

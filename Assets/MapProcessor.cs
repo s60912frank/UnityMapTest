@@ -12,9 +12,9 @@ public class MapProcessor : MonoBehaviour {
     public static float latOrigin = 25.0488153f;
     public static float lonOrigin = 121.445669f;
     private int zoom = 14; //放大倍率，1~19
-    private List<MapTile> mapTiles;
+    private List<MapTile> mapTiles; //儲存現在畫面上的mapTiles
     private int mapTileIndex = 0;
-    private bool mapTileLock = false;
+    private bool mapTileLock = false; //一次只畫一張地圖塊
 	// Use this for initialization
 	void Start () {
         mapTiles = new List<MapTile>();
@@ -31,10 +31,12 @@ public class MapProcessor : MonoBehaviour {
 
     private void requestMap(int xtile, int ytile) //要地圖塊
     {
+        //如果之前有存過此地圖塊那就直接讀檔
         if (File.Exists("./MapTiles/" + zoom.ToString() + "_" + xTile.ToString() + "_" + yTile.ToString() + ".json"))
         {
             JsonProssor(File.ReadAllText("./MapTiles/" + zoom.ToString() + "_" + xTile.ToString() + "_" + yTile.ToString() + ".json"));
         }
+        //沒的話跟伺服器要
         else
         {
             url = "https://vector.mapzen.com/osm/" + MAP_TYPE + "/" + zoom + "/" + xtile + "/" + ytile + ".json?api_key=" + API_KEY;
@@ -83,7 +85,7 @@ public class MapProcessor : MonoBehaviour {
                     Debug.Log(type);
                     break;
             }
-            //DrawBuildings(type, coords.ToArray()); //丟進去畫
+            //存入該mapTile的點List
             mapTiles[mapTileIndex].AddMapObj(type, coords);
         }
 
@@ -108,7 +110,7 @@ public class MapProcessor : MonoBehaviour {
                         {
                             smallLine.Add(new Vector2(float.Parse(co2[0].ToString()), float.Parse(co2[1].ToString()))); 
                         }
-                        //DrawRoads(smallLine.ToArray()); //去畫
+                        //存入該mapTile的點List
                         mapTiles[mapTileIndex].AddMapObj("LineString", smallLine);
                     }
                     break;
@@ -116,6 +118,7 @@ public class MapProcessor : MonoBehaviour {
                     Debug.Log(type);
                     break;
             }
+            //存入該mapTile的點List
             mapTiles[mapTileIndex].AddMapObj("LineString", coords);
         }
 
@@ -140,7 +143,7 @@ public class MapProcessor : MonoBehaviour {
                         {
                             smallLine.Add(new Vector2(float.Parse(co2[0].ToString()), float.Parse(co2[1].ToString()))); 
                         }
-                        //DrawRoads(smallLine.ToArray());
+                        //存入該mapTile的點List
                         mapTiles[mapTileIndex].AddMapObj("LineString", smallLine);
                     }
                     break;
@@ -148,10 +151,13 @@ public class MapProcessor : MonoBehaviour {
                     Debug.Log(type);
                     break;
             }
+            //存入該mapTile的點List
             mapTiles[mapTileIndex].AddMapObj("LineString", coords);
         }
 
+        //轉換成遊戲世界座標and取得這地圖塊的大小
         mapTiles[mapTileIndex].Normalize();
+        //畫地圖
         foreach (MapTile mapTile in mapTiles)
         {
             foreach (MapTile.MapObj mo in mapTile.mapObjs)
@@ -159,15 +165,16 @@ public class MapProcessor : MonoBehaviour {
                 DrawMapObj(mo.type, mo.verticies.ToArray());
             }
         }
+        //畫完解除鎖定
         mapTileLock = false;
     }
 
-    private void DrawMapObj(string type, Vector2[] vertices2D) //畫建築物
+    private void DrawMapObj(string type, Vector2[] vertices2D) //畫地圖物件
     {
         GameObject obj = new GameObject(); //創個新物體
-        obj.tag = "MapObj";
+        obj.tag = "MapObj"; //方便清掉
         Vector3[] vertices = new Vector3[vertices2D.Length];
-        for (int i = 0; i < vertices.Length; i++) //就只是2D轉3D補0
+        for (int i = 0; i < vertices.Length; i++) //就只是2D轉3D
         {
             vertices[i] = new Vector3(vertices2D[i].x, vertices2D[i].y, -0.1f); //一樣設0會有問題
         }
@@ -179,7 +186,6 @@ public class MapProcessor : MonoBehaviour {
                 int[] indices = tr.Triangulate();
                 //Create the mesh
                 Mesh msh = new Mesh();
-                msh.Clear();
                 msh.vertices = vertices;
                 msh.triangles = indices;
                 msh.RecalculateNormals();
@@ -190,7 +196,6 @@ public class MapProcessor : MonoBehaviour {
                 msgr.material = Resources.Load("building") as Material;
                 MeshFilter filter = obj.AddComponent<MeshFilter>() as MeshFilter;
                 filter.mesh = msh;
-                //obj.transform.parent = this.gameObject.transform; //附加在本plane下
                 break;
             case "Point":
                 //還是不知怎畫
@@ -208,15 +213,17 @@ public class MapProcessor : MonoBehaviour {
                 line.material = Resources.Load("road") as Material;
                 //line.transform.parent = this.gameObject.transform;
                 line.useWorldSpace = false;
+                obj.SetActive(true);
+                
                 break;
         }
     }
 
     public void GetNewTile(int[] diff) //跟伺服器要新地圖塊
     {
-        if (!mapTileLock)
+        if (!mapTileLock) //沒被鎖才畫
         {
-            mapTileLock = true;
+            mapTileLock = true; //鎖
             xTile += diff[0]; //往右??格
             yTile -= diff[1]; //往下??格
             mapTiles.Add(new MapTile(xTile, yTile, zoom));
@@ -225,20 +232,22 @@ public class MapProcessor : MonoBehaviour {
         }
     }
 
-    public void GetNewZoomTile(object[] objs)
+    public void GetNewZoomTile(object[] objs) //要不同縮放層級的地圖
     {
         if (!mapTileLock)
         {
-            mapTiles.Clear();
-            mapTileIndex = 0;
-            int zoomDiff = (int)(objs[1] as int?);
-            Vector2 camPos = (Vector2)(objs[0] as Vector2?);
+            mapTiles.Clear();  //清掉array
+            mapTileIndex = 0; //index設為0
+            int zoomDiff = (int)(objs[1] as int?);//zoom+1 or -1
+            Vector2 camPos = (Vector2)(objs[0] as Vector2?);//cam的位置
             zoom += zoomDiff;
             float times = Mathf.Pow(2, zoom) / 10;
+            //將遊戲座標轉回經緯度
             mapTiles.Add(new MapTile(camPos.x / times + lonOrigin, camPos.y / times + latOrigin, zoom));
-            mapTileLock = true;
+            mapTileLock = true; //鎖個
+            xTile = mapTiles[0].xTile;
+            yTile = mapTiles[0].yTile;
             requestMap(mapTiles[0].xTile, mapTiles[0].yTile);
-            //Debug.Log((camPos.x / times + lonOrigin).ToString() + "/" + (camPos.y / times + latOrigin).ToString());
             Debug.Log(mapTiles[0].xTile + "/" + mapTiles[0].yTile);
         }
     }
