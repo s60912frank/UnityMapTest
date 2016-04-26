@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 
 public class MapProcessor : MonoBehaviour {
     public const string API_KEY = "vector-tiles-vxQ7SnN";
@@ -30,10 +31,17 @@ public class MapProcessor : MonoBehaviour {
 
     private void requestMap(int xtile, int ytile) //要地圖塊
     {
-        url = "https://vector.mapzen.com/osm/" + MAP_TYPE + "/" + zoom + "/" + xtile + "/" + ytile + ".json?api_key=" + API_KEY;
-        Debug.Log(url);
-        WWW request = new WWW(url);
-        StartCoroutine(WaitForRequest(request));
+        if (File.Exists("./MapTiles/" + zoom.ToString() + "_" + xTile.ToString() + "_" + yTile.ToString() + ".json"))
+        {
+            JsonProssor(File.ReadAllText("./MapTiles/" + zoom.ToString() + "_" + xTile.ToString() + "_" + yTile.ToString() + ".json"));
+        }
+        else
+        {
+            url = "https://vector.mapzen.com/osm/" + MAP_TYPE + "/" + zoom + "/" + xtile + "/" + ytile + ".json?api_key=" + API_KEY;
+            Debug.Log(url);
+            WWW request = new WWW(url);
+            StartCoroutine(WaitForRequest(request));
+        }
     }
 
     IEnumerator WaitForRequest(WWW www) //當資料從伺服器回來會執行這個
@@ -43,6 +51,7 @@ public class MapProcessor : MonoBehaviour {
         if (www.error == null)
         {
             Debug.Log("WWW Ok!");
+            File.WriteAllText("./MapTiles/" + zoom.ToString() + "_" + xTile.ToString() + "_" + yTile.ToString() + ".json", www.text);
             JsonProssor(www.text); //有資料就去處理囉
         }
         else
@@ -218,14 +227,19 @@ public class MapProcessor : MonoBehaviour {
 
     public void GetNewZoomTile(object[] objs)
     {
-        mapTiles.Clear();
-        mapTileIndex = 0;
-        int zoomDiff = (int)(objs[1] as int?);
-        Vector2 camPos = (Vector2)(objs[0] as Vector2?);
-        zoom += zoomDiff;
-        float times = Mathf.Pow(2, zoom) / 10;
-        mapTiles.Add(new MapTile(camPos.x / times + lonOrigin, camPos.y / times + latOrigin, zoom));
-        requestMap(mapTiles[0].xTile, mapTiles[0].yTile);
-        Debug.Log((camPos.x / times + lonOrigin).ToString() + "/" + (camPos.y / times + latOrigin).ToString());
+        if (!mapTileLock)
+        {
+            mapTiles.Clear();
+            mapTileIndex = 0;
+            int zoomDiff = (int)(objs[1] as int?);
+            Vector2 camPos = (Vector2)(objs[0] as Vector2?);
+            zoom += zoomDiff;
+            float times = Mathf.Pow(2, zoom) / 10;
+            mapTiles.Add(new MapTile(camPos.x / times + lonOrigin, camPos.y / times + latOrigin, zoom));
+            mapTileLock = true;
+            requestMap(mapTiles[0].xTile, mapTiles[0].yTile);
+            //Debug.Log((camPos.x / times + lonOrigin).ToString() + "/" + (camPos.y / times + latOrigin).ToString());
+            Debug.Log(mapTiles[0].xTile + "/" + mapTiles[0].yTile);
+        }
     }
 }
