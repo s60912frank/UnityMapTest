@@ -9,14 +9,15 @@ public class MapProcessor : MonoBehaviour {
     private int xTile;  //儲存現在camera所在的地圖格(大概 不是很準)
     private int yTile;
     public string url;
-    public static float latOrigin = 25.0488153f;
-    public static float lonOrigin = 121.445669f;
+	public static float latOrigin = 25.0417534f;
+	public static float lonOrigin = 121.5339142f;
     private int zoom = 14; //放大倍率，1~19
     private List<MapTile> mapTiles; //儲存現在畫面上的mapTiles
     private int mapTileIndex = 0;
     private bool mapTileLock = false; //一次只畫一張地圖塊
 	// Use this for initialization
 	void Start () {
+		Debug.Log (Application.persistentDataPath);
         mapTiles = new List<MapTile>();
         mapTiles.Add(new MapTile(lonOrigin, latOrigin, zoom));
         xTile = mapTiles[mapTileIndex].xTile; //起始地圖格

@@ -84,28 +84,32 @@ public class CamController : MonoBehaviour {
         }
 
         //雙指縮放,未測試
-        if (Input.touchCount == 2 && (Input.GetTouch(0).phase == TouchPhase.Moved || Input.GetTouch(1).phase == TouchPhase.Moved))
+        if (Input.touchCount == 2)
         {
-            float touchDelta = Mathf.Sqrt((Input.GetTouch(0).deltaPosition - Input.GetTouch(1).deltaPosition).sqrMagnitude);
-            trans.position -= Vector3.forward * touchDelta * 0.05f;
-            //if(Input.touches[0].phase == TouchPhase.Began && Input.touches[1].phase == TouchPhase.Began)
-            //{
-            //    panDiff = Mathf.Sqrt((Input.touches[0].position - Input.touches[1].position).sqrMagnitude);
-            //}
-            //else if (Input.touches[0].phase == TouchPhase.Moved && Input.touches[1].phase == TouchPhase.Moved)
-            //{
-            //    float diff = Mathf.Sqrt((Input.touches[0].position - Input.touches[1].position).sqrMagnitude);
-            //    float dir = panDiff - diff;
-            //    if (dir < 0)
-            //    {
-            //        trans.position -= Vector3.forward * dir * 0.005f;
-            //    }
-            //    else
-            //    {
-            //        trans.position += Vector3.forward * dir * 0.005f;
-            //    }
-            //    Debug.Log(dir);
-            //}
+			//Vector2 one = Input.GetTouch (0).deltaPosition;
+			//Vector2 two = Input.GetTouch (1).deltaPosition;
+			//Debug.Log ("ONE:" + (one - two).ToString());
+            //float touchDelta = Mathf.Sqrt((Input.GetTouch(0).deltaPosition - Input.GetTouch(1).deltaPosition).sqrMagnitude);
+            //trans.position -= Vector3.forward * touchDelta * 0.05f;
+
+            if(Input.touches[0].phase == TouchPhase.Began && Input.touches[1].phase == TouchPhase.Began)
+            {
+                panDiff = Mathf.Sqrt((Input.touches[0].position - Input.touches[1].position).sqrMagnitude);
+            }
+            else if (Input.touches[0].phase == TouchPhase.Moved && Input.touches[1].phase == TouchPhase.Moved)
+            {
+                float diff = Mathf.Sqrt((Input.touches[0].position - Input.touches[1].position).sqrMagnitude);
+                float dir = panDiff - diff;
+                if (dir < 0)
+                {
+                    trans.position -= Vector3.forward * dir * 0.0015f;
+                }
+                else
+                {
+                    trans.position -= Vector3.forward * dir * 0.0015f;
+                }
+                Debug.Log(dir);
+            }
         }
 
         //起始y=-10,-5時可視面積1/4所以zoom+1,-20時可視面積4倍所以zoom-1
