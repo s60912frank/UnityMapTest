@@ -6,6 +6,8 @@ public class CamController : MonoBehaviour {
     private GameObject map;
     private Vector3 nowHit;
     private float panDiff;
+    public GameObject light;
+
 	// Use this for initialization
 	void Start () {
         trans = gameObject.transform;
@@ -13,8 +15,12 @@ public class CamController : MonoBehaviour {
         
     }
 	
+
+
 	// Update is called once per frame
 	void Update () {
+        light.transform.position = new Vector3(this.transform.position.x, this.transform.position.y, -10);
+
         //方向建移動cam
         if (Input.GetKey(KeyCode.UpArrow))
         {
