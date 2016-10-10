@@ -11,7 +11,7 @@ public class MapProcessor : MonoBehaviour {
     public string url;
 	public static float latOrigin = 25.0417534f;
 	public static float lonOrigin = 121.5339142f;
-    private int zoom = 14; //放大倍率，1~19
+    private int zoom = 15; //放大倍率，1~19
     private List<MapTile> mapTiles; //儲存現在畫面上的mapTiles
     private int mapTileIndex = 0;
     private bool mapTileLock = false; //一次只畫一張地圖塊
@@ -218,7 +218,7 @@ public class MapProcessor : MonoBehaviour {
         
         Vector3[] vertices2 = new Vector3[verticesLength * 2];
         for (int i = 0; i < verticesLength; i++)        
-            vertices2[i] = new Vector3(vertices2D[i].x, vertices2D[i].y, -2f);//高度.高度.高度.高度.高度.高度.
+            vertices2[i] = new Vector3(vertices2D[i].x, vertices2D[i].y, -0.8f);//高度.高度.高度.高度.高度.高度.
         for (int i = 0; i < verticesLength; i++)
             vertices2[i+ verticesLength] = new Vector3(vertices2D[i].x, vertices2D[i].y, -0.1f);
         
